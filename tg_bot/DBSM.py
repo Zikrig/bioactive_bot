@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Boolean, select, BigInteger, DateTime, func, and_, JSON, text
+from sqlalchemy import Column, Integer, Text, Boolean, select, BigInteger, DateTime, func, and_, JSON, text, update
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -128,8 +128,12 @@ async def is_invited(user_id):
                 new_level = 0
             
             if new_level != 0:
-                curr.referal_level = new_level
+                # Явно обновляем через UPDATE
+                await session.execute(
+                    update(User).where(User.user_id == user_id).values(referal_level=new_level)
+                )
                 await session.commit()
+                return new_level
 
         return curr.referal_level or 0
     finally:
