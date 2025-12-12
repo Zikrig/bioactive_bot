@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Boolean, select, BigInteger, DateTime, func, and_, JSON
+from sqlalchemy import Column, Integer, Text, Boolean, select, BigInteger, DateTime, func, and_, JSON, text
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -46,6 +46,7 @@ class User(Base):
     referal = Column(BigInteger, nullable=True)
     referal_balance = Column(Integer, default=0)
     bucket = Column(JSON, default= {})
+    referal_level = Column(Integer, default=0)  # 0 - обычный, 1 - MAIN, 2 - приглашён MAIN
 
 
 class Payment(Base):
@@ -71,8 +72,22 @@ async def add_user(username, user_id, referal_id):
         await session.close()
         return False
     
+    # Определяем уровень реферала и устанавливаем поле referal_level
+    if user_id == MAIN_REFERAL_ID:
+        level = 1
+    elif referal_id == MAIN_REFERAL_ID:
+        level = 2
+    else:
+        level = 0
+
     now_date = datetime.now(pytz.timezone('Europe/Moscow'))
-    new = User(username = username, user_id = user_id, date_register = now_date, referal = referal_id)
+    new = User(
+        username = username,
+        user_id = user_id,
+        date_register = now_date,
+        referal = referal_id,
+        referal_level = level
+    )
     session.add(new)
     await session.commit()
     await session.refresh(new)
@@ -89,36 +104,35 @@ async def all_user():
     return all
 
 async def is_invited(user_id):
-    """
-    Определяет уровень пользователя в реферальной системе:
-    - 2: Пользователь сам является MAIN_REFERAL_ID (реферал первого уровня)
-    - 1: Пользователь приглашен напрямую MAIN_REFERAL_ID (реферал второго уровня)
-    - 0: Обычный пользователь (приглашен рефералом второго уровня или без реферала)
-    """
     Session = async_sessionmaker()
     session = Session(bind = engine)
     curr = await session.execute(select(User).filter(User.user_id == user_id))
     curr = curr.scalars().first()
+    if not curr:
+        await session.close()
+        return 0
+
+    # Если уровень не установлен (исторические записи) — вычисляем и сохраняем
+    if curr.referal_level in (None, 0):
+        if curr.user_id == MAIN_REFERAL_ID:
+            curr.referal_level = 1
+        elif curr.referal == MAIN_REFERAL_ID:
+            curr.referal_level = 2
+        else:
+            curr.referal_level = 0
+        await session.commit()
+
+    level = curr.referal_level or 0
     await session.close()
-    if curr.user_id == MAIN_REFERAL_ID:
-        return 1  # MAIN_REFERAL_ID - реферал первого уровня
-    elif curr.referal == MAIN_REFERAL_ID:
-        return 2  # Приглашен MAIN_REFERAL_ID - реферал второго уровня
-    else:
-        return 0  # Обычный пользователь
+    return level
 
 async def get_referal_level(user_id):
     user_level = await is_invited(user_id)
-    
-    # Реферал первого уровня: сам MAIN_REFERAL_ID
+
     if user_level == 1:
-        return 'first'
-    
-    # Реферал второго уровня: приглашен MAIN_REFERAL_ID
+        return 'first'   # MAIN_REFERAL_ID
     if user_level == 2:
-        return 'second'
-    
-    # Обычный пользователь (приглашен рефералом второго уровня или без реферала)
+        return 'second'  # приглашён MAIN_REFERAL_ID
     return None
 
 async def get_referals_count(user_id):
@@ -246,25 +260,25 @@ async def process_referal_up(buyer_id, price):
     first_referal = await session.execute(select(User).filter(User.user_id == first_referal_id))
     first_referal = first_referal.scalars().first()
     
-    # Проверяем, есть ли реферал 2 уровня (кто пригласил реферала 1 уровня)
+    # Проверяем, есть ли реферал выше (кто пригласил пригласившего)
     if first_referal.referal:
-        # Есть 2 уровня
+        # Покупателя пригласил реферал 2 уровня (first_referal), его пригласил реферал 1 уровня (second_referal)
         second_referal_id = first_referal.referal
         second_referal = await session.execute(select(User).filter(User.user_id == second_referal_id))
         second_referal = second_referal.scalars().first()
-        
-        # Реферал 2 уровня получает 40%
-        second_referal.referal_balance = second_referal.referal_balance + 0.4 * price
-        second_text = f"🎉 Поздравляем! Пользователь, приглашённый Вашим рефералом, совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.4*price}₽</u> (40%)"
-        second_id = second_referal_id
-        
-        # Реферал 1 уровня получает 10% (так как есть реферал выше)
-        first_referal.referal_balance = first_referal.referal_balance + 0.1 * price
-        first_text = f"🎉 Поздравляем! Ваш реферал совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.1*price}₽</u> (10%)"
+
+        # Реферал 2 уровня (first_referal) получает 40%
+        first_referal.referal_balance = first_referal.referal_balance + 0.4 * price
+        first_text = f"🎉 Поздравляем! Ваш реферал совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.4*price}₽</u> (40%)"
         first_id = first_referal_id
-        
+
+        # Реферал 1 уровня (second_referal) получает 10%
+        second_referal.referal_balance = second_referal.referal_balance + 0.1 * price
+        second_text = f"🎉 Пользователь, приглашённый вашим рефералом, совершил покупку на <u>{price}₽</u>\n💰 Баланс пополнен на <u>{0.1*price}₽</u> (10%)"
+        second_id = second_referal_id
+
     else:
-        # Только 1 уровень - реферал получает 50%
+        # Покупателя пригласил реферал 1 уровня напрямую — получает 50%
         first_referal.referal_balance = first_referal.referal_balance + 0.5 * price
         first_text = f"🎉 Поздравляем! Ваш реферал совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.5*price}₽</u> (50%)"
         first_id = first_referal_id
@@ -438,6 +452,10 @@ class Stats:
 
 async def init_models():
     async with engine.begin() as conn:
+        # Добавляем новое поле referal_level, если его ещё нет
+        await conn.execute(
+            text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS referal_level INTEGER DEFAULT 0')
+        )
         await conn.run_sync(Base.metadata.create_all)
         
 # asyncio.run(init_models())
