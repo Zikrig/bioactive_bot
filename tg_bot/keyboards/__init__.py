@@ -1,0 +1,2 @@
+from .user_keyboards import start_kb, main_kb, about_kb, toabout_kb, back_kb, referal_kb, catalog_kb, close_kb, bucket_kb, pay_kb, after_clear_kb, watch_docs_kb
+from .admin_keyboards import start_admin_kb, contact_kb

@@ -1,0 +1,12 @@
+.env
+venv
+*.sqlite3
+*.db
+test.py
+*.log
+*.pyc
+.DS_Store
+vector_db/
+историяуспеха.mov
+вопросответ.mp4
+Реферальная статистика.xlsx

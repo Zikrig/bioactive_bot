@@ -1,0 +1,15 @@
+aiogram==2.7
+sqlalchemy
+environs
+asyncpg
+aiosqlite
+pytz
+greenlet
+httpx
+langchain_openai
+langchain_community
+openai
+pypdf
+faiss-cpu
+openpyxl
+flask[async]
