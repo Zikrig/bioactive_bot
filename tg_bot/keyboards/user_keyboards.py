@@ -7,12 +7,13 @@ def start_kb():
     kb.add(InlineKeyboardButton(text = "🏠 В главное меню", callback_data= "start_back"))
     return kb
 
-def main_kb():
+def main_kb(has_referal_access: bool = False):
     kb = InlineKeyboardMarkup()
     kb.add(InlineKeyboardButton(text = "📌 Про наши пептиды", callback_data= "start_about"))
     kb.add(InlineKeyboardButton(text = "🛒 Каталог пептидов", callback_data= "start_catalog"))
     kb.add(InlineKeyboardButton(text = "🤖 ИИ-ассистент", callback_data= "start_ai"))
-    kb.add(InlineKeyboardButton(text = "👤 Реферальная система", callback_data= "start_referal"))
+    if has_referal_access:
+        kb.add(InlineKeyboardButton(text = "💰 Реферальный кабинет", callback_data= "start_referal"))
     kb.add(InlineKeyboardButton(text = "📄 Публичная Оферта", url = "https://disk.yandex.ru/i/tINnw4jOFwwhcA"))
     kb.add(InlineKeyboardButton(text = "💬 Наш чат", url = "https://t.me/+sgdW0P9e9u9jMTcy"))
     kb.add(InlineKeyboardButton(text = "📢 Наш канал", url = "https://t.me/+daOm2Fv5FTBkMmNi"))
