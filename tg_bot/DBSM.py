@@ -91,9 +91,9 @@ async def all_user():
 async def is_invited(user_id):
     """
     Определяет уровень пользователя в реферальной системе:
-    - 2: Пользователь сам является MAIN_REFERAL_ID
-    - 1: Пользователь приглашен напрямую MAIN_REFERAL_ID
-    - 0: Обычный пользователь (не связан с MAIN_REFERAL_ID напрямую)
+    - 2: Пользователь сам является MAIN_REFERAL_ID (реферал первого уровня)
+    - 1: Пользователь приглашен напрямую MAIN_REFERAL_ID (реферал второго уровня)
+    - 0: Обычный пользователь (приглашен рефералом второго уровня или без реферала)
     """
     Session = async_sessionmaker()
     session = Session(bind = engine)
@@ -101,28 +101,25 @@ async def is_invited(user_id):
     curr = curr.scalars().first()
     await session.close()
     if curr.user_id == MAIN_REFERAL_ID:
-        return 2
+        return 1  # MAIN_REFERAL_ID - реферал первого уровня
     elif curr.referal == MAIN_REFERAL_ID:
-        return 1
+        return 2  # Приглашен MAIN_REFERAL_ID - реферал второго уровня
     else:
-        return 0
+        return 0  # Обычный пользователь
 
 async def get_referal_level(user_id):
-    """
-    Определяет уровень реферала:
-    - 'first': Реферал первого уровня (case 1 или 2)
-    - 'second': Реферал второго уровня (case 0, но имеет рефералов)
-    - None: Обычный пользователь без рефералов
-    """
     user_level = await is_invited(user_id)
-    referals_count = await get_referals_count(user_id)
     
+    # Реферал первого уровня: сам MAIN_REFERAL_ID
     if user_level == 1:
         return 'first'
-    elif user_level == 2:
+    
+    # Реферал второго уровня: приглашен MAIN_REFERAL_ID
+    if user_level == 2:
         return 'second'
-    else:
-        return None
+    
+    # Обычный пользователь (приглашен рефералом второго уровня или без реферала)
+    return None
 
 async def get_referals_count(user_id):
     Session = async_sessionmaker()
