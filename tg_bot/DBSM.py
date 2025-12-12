@@ -104,27 +104,36 @@ async def all_user():
     return all
 
 async def is_invited(user_id):
+    """
+    Возвращает уровень реферала из БД:
+    - 1: MAIN_REFERAL_ID (реферал первого уровня)
+    - 2: Приглашен MAIN_REFERAL_ID (реферал второго уровня)
+    - 0: Обычный пользователь
+    """
     Session = async_sessionmaker()
     session = Session(bind = engine)
-    curr = await session.execute(select(User).filter(User.user_id == user_id))
-    curr = curr.scalars().first()
-    if not curr:
+    try:
+        curr = await session.execute(select(User).filter(User.user_id == user_id))
+        curr = curr.scalars().first()
+        if not curr:
+            return 0
+
+        # Если уровень не установлен (исторические записи) — вычисляем и сохраняем
+        if curr.referal_level is None or curr.referal_level == 0:
+            if curr.user_id == MAIN_REFERAL_ID:
+                new_level = 1
+            elif curr.referal == MAIN_REFERAL_ID:
+                new_level = 2
+            else:
+                new_level = 0
+            
+            if new_level != 0:
+                curr.referal_level = new_level
+                await session.commit()
+
+        return curr.referal_level or 0
+    finally:
         await session.close()
-        return 0
-
-    # Если уровень не установлен (исторические записи) — вычисляем и сохраняем
-    if curr.referal_level in (None, 0):
-        if curr.user_id == MAIN_REFERAL_ID:
-            curr.referal_level = 1
-        elif curr.referal == MAIN_REFERAL_ID:
-            curr.referal_level = 2
-        else:
-            curr.referal_level = 0
-        await session.commit()
-
-    level = curr.referal_level or 0
-    await session.close()
-    return level
 
 async def get_referal_level(user_id):
     user_level = await is_invited(user_id)
@@ -452,10 +461,7 @@ class Stats:
 
 async def init_models():
     async with engine.begin() as conn:
-        # Добавляем новое поле referal_level, если его ещё нет
-        await conn.execute(
-            text('ALTER TABLE "user" ADD COLUMN IF NOT EXISTS referal_level INTEGER DEFAULT 0')
-        )
+        # Создаём таблицы (referal_level уже есть в модели User)
         await conn.run_sync(Base.metadata.create_all)
         
 # asyncio.run(init_models())
