@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, Boolean, select, BigInteger, DateTime, func, and_, JSON, text, update
+from sqlalchemy import Column, Integer, Text, Boolean, select, BigInteger, DateTime, func, and_, JSON, text
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -18,6 +18,9 @@ DATABASE_URL = env.str(
     default="postgresql+asyncpg://bioactive_user:bioactive_password@postgres:5432/bioactive_db"
 )
 
+# Список ID админов (уровень 1)
+ADMIN_IDS = [int(x) for x in env.list("ADMIN_IDS", [])]
+
 # Создание объекта Engine
 engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
 
@@ -25,7 +28,8 @@ engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
 Base = declarative_base()
 
 
-MAIN_REFERAL_ID = 1007693291
+# Для обратной совместимости (первый админ = главный реферал)
+MAIN_REFERAL_ID = ADMIN_IDS[0] if ADMIN_IDS else 0
 
 
 positions = {
@@ -66,33 +70,42 @@ class Payment(Base):
 async def add_user(username, user_id, referal_id):
     Session = async_sessionmaker()
     session = Session(bind = engine)
-    curr = await session.execute(select(User).filter(User.user_id == user_id))
-    curr = curr.scalars().first()
-    if curr:
-        await session.close()
-        return False
-    
-    # Определяем уровень реферала и устанавливаем поле referal_level
-    if user_id == MAIN_REFERAL_ID:
-        level = 1
-    elif referal_id == MAIN_REFERAL_ID:
-        level = 2
-    else:
-        level = 0
+    try:
+        curr = await session.execute(select(User).filter(User.user_id == user_id))
+        curr = curr.scalars().first()
+        if curr:
+            return False
+        
+        # Определяем уровень реферала:
+        # - Админы (ADMIN_IDS) = уровень 1
+        # - Приглашенные уровнем 1 = уровень 2
+        # - Приглашенные уровнем 2 = уровень 0
+        if user_id in ADMIN_IDS:
+            level = 1
+        else:
+            # Проверяем уровень того, кто пригласил
+            referal = await session.execute(select(User).filter(User.user_id == referal_id))
+            referal = referal.scalars().first()
+            
+            if referal and referal.referal_level == 1:
+                level = 2  # Приглашен админом -> уровень 2
+            else:
+                level = 0  # Приглашен рефералом 2 уровня или без реферала -> уровень 0
 
-    now_date = datetime.now(pytz.timezone('Europe/Moscow'))
-    new = User(
-        username = username,
-        user_id = user_id,
-        date_register = now_date,
-        referal = referal_id,
-        referal_level = level
-    )
-    session.add(new)
-    await session.commit()
-    await session.refresh(new)
-    await session.close()
-    return True
+        now_date = datetime.now(pytz.timezone('Europe/Moscow'))
+        new = User(
+            username = username,
+            user_id = user_id,
+            date_register = now_date,
+            referal = referal_id,
+            referal_level = level
+        )
+        session.add(new)
+        await session.commit()
+        await session.refresh(new)
+        return True
+    finally:
+        await session.close()
 
 
 async def all_user():
@@ -106,8 +119,8 @@ async def all_user():
 async def is_invited(user_id):
     """
     Возвращает уровень реферала из БД:
-    - 1: MAIN_REFERAL_ID (реферал первого уровня)
-    - 2: Приглашен MAIN_REFERAL_ID (реферал второго уровня)
+    - 1: Админ (уровень первый)
+    - 2: Приглашен админом (уровень второй)
     - 0: Обычный пользователь
     """
     Session = async_sessionmaker()
@@ -120,33 +133,42 @@ async def is_invited(user_id):
 
         # Если уровень не установлен (исторические записи) — вычисляем и сохраняем
         if curr.referal_level is None or curr.referal_level == 0:
-            if curr.user_id == MAIN_REFERAL_ID:
+            if curr.user_id in ADMIN_IDS:
                 new_level = 1
-            elif curr.referal == MAIN_REFERAL_ID:
-                new_level = 2
             else:
-                new_level = 0
+                # Проверяем уровень реферала
+                if curr.referal:
+                    referal = await session.execute(select(User).filter(User.user_id == curr.referal))
+                    referal = referal.scalars().first()
+                    if referal and referal.referal_level == 1:
+                        new_level = 2
+                    else:
+                        new_level = 0
+                else:
+                    new_level = 0
             
             if new_level != 0:
-                # Явно обновляем через UPDATE
-                await session.execute(
-                    update(User).where(User.user_id == user_id).values(referal_level=new_level)
-                )
+                curr.referal_level = new_level
                 await session.commit()
-                return new_level
 
         return curr.referal_level or 0
     finally:
         await session.close()
 
 async def get_referal_level(user_id):
+    """
+    Возвращает категорию реферала:
+    - 'first': Админ (уровень 1)
+    - 'second': Приглашен админом (уровень 2)
+    - None: Обычный пользователь (уровень 0) - не видит рефералку
+    """
     user_level = await is_invited(user_id)
 
     if user_level == 1:
-        return 'first'   # MAIN_REFERAL_ID
+        return 'first'   # Админ
     if user_level == 2:
-        return 'second'  # приглашён MAIN_REFERAL_ID
-    return None
+        return 'second'  # Приглашён админом
+    return None  # Обычный пользователь - не видит рефералку
 
 async def get_referals_count(user_id):
     Session = async_sessionmaker()
@@ -248,10 +270,14 @@ async def bucket_items(user_id):
 # работа с рефералами
 async def process_referal_up(buyer_id, price):
     """
-    Новая реферальная система:
-    - Реферал 1 уровня: 50% от покупок приглашенных пользователей
-    - Реферал 2 уровня: 40% от покупок + реферал 1 уровня получает 10% от этих же покупок
-    - Больше 2 уровней нет
+    Реферальная система:
+    Структура: Админ (ур.1) -> Реферал (ур.2) -> Покупатель (ур.0)
+    
+    - Если покупателя пригласил реферал уровня 2:
+      - Реферал уровня 2 получает 40%
+      - Админ (уровень 1) получает 10%
+    - Если покупателя пригласил админ напрямую:
+      - Админ получает 50%
     """
     first_text, second_text = None, None
     first_id, second_id = None, None
@@ -259,46 +285,49 @@ async def process_referal_up(buyer_id, price):
     Session = async_sessionmaker()
     session = Session(bind = engine)
     
-    # Получаем покупателя
-    buyer = await session.execute(select(User).filter(User.user_id == buyer_id))
-    buyer = buyer.scalars().first()
-    
-    # Если у покупателя нет реферала - никому ничего не начисляем
-    if not buyer.referal:
-        await session.close()
+    try:
+        # Получаем покупателя
+        buyer = await session.execute(select(User).filter(User.user_id == buyer_id))
+        buyer = buyer.scalars().first()
+        
+        # Если у покупателя нет реферала - никому ничего не начисляем
+        if not buyer or not buyer.referal:
+            return (first_id, second_id), (first_text, second_text)
+        
+        # Получаем того, кто пригласил покупателя
+        inviter_id = buyer.referal
+        inviter = await session.execute(select(User).filter(User.user_id == inviter_id))
+        inviter = inviter.scalars().first()
+        
+        if not inviter:
+            return (first_id, second_id), (first_text, second_text)
+        
+        # Проверяем уровень пригласившего
+        if inviter.referal_level == 2:
+            # Покупателя пригласил реферал уровня 2 -> он получает 40%
+            inviter.referal_balance = inviter.referal_balance + 0.4 * price
+            first_text = f"🎉 Поздравляем! Ваш реферал совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.4*price}₽</u> (40%)"
+            first_id = inviter_id
+            
+            # Админ (кто пригласил реферала уровня 2) получает 10%
+            if inviter.referal:
+                admin = await session.execute(select(User).filter(User.user_id == inviter.referal))
+                admin = admin.scalars().first()
+                if admin and admin.referal_level == 1:
+                    admin.referal_balance = admin.referal_balance + 0.1 * price
+                    second_text = f"🎉 Пользователь, приглашённый вашим рефералом, совершил покупку на <u>{price}₽</u>\n💰 Баланс пополнен на <u>{0.1*price}₽</u> (10%)"
+                    second_id = inviter.referal
+        
+        elif inviter.referal_level == 1:
+            # Покупателя пригласил админ напрямую -> админ получает 50%
+            inviter.referal_balance = inviter.referal_balance + 0.5 * price
+            first_text = f"🎉 Поздравляем! Ваш реферал совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.5*price}₽</u> (50%)"
+            first_id = inviter_id
+        
+        await session.commit()
         return (first_id, second_id), (first_text, second_text)
-    
-    # Получаем реферала 1 уровня (кто пригласил покупателя)
-    first_referal_id = buyer.referal
-    first_referal = await session.execute(select(User).filter(User.user_id == first_referal_id))
-    first_referal = first_referal.scalars().first()
-    
-    # Проверяем, есть ли реферал выше (кто пригласил пригласившего)
-    if first_referal.referal:
-        # Покупателя пригласил реферал 2 уровня (first_referal), его пригласил реферал 1 уровня (second_referal)
-        second_referal_id = first_referal.referal
-        second_referal = await session.execute(select(User).filter(User.user_id == second_referal_id))
-        second_referal = second_referal.scalars().first()
-
-        # Реферал 2 уровня (first_referal) получает 40%
-        first_referal.referal_balance = first_referal.referal_balance + 0.4 * price
-        first_text = f"🎉 Поздравляем! Ваш реферал совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.4*price}₽</u> (40%)"
-        first_id = first_referal_id
-
-        # Реферал 1 уровня (second_referal) получает 10%
-        second_referal.referal_balance = second_referal.referal_balance + 0.1 * price
-        second_text = f"🎉 Пользователь, приглашённый вашим рефералом, совершил покупку на <u>{price}₽</u>\n💰 Баланс пополнен на <u>{0.1*price}₽</u> (10%)"
-        second_id = second_referal_id
-
-    else:
-        # Покупателя пригласил реферал 1 уровня напрямую — получает 50%
-        first_referal.referal_balance = first_referal.referal_balance + 0.5 * price
-        first_text = f"🎉 Поздравляем! Ваш реферал совершил покупку на <u>{price}₽</u>\n💰 Баланс Вашего реферального кабинета пополнен на <u>{0.5*price}₽</u> (50%)"
-        first_id = first_referal_id
-    
-    await session.commit()
-    await session.close()
-    return (first_id, second_id), (first_text, second_text)
+    finally:
+        await session.close()
 
 async def process_referal_table():
     Session = async_sessionmaker()
