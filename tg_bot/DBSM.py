@@ -493,8 +493,14 @@ class Stats:
 
 
 async def init_models():
+    # Создаём таблицы
     async with engine.begin() as conn:
-        # Создаём таблицы (referal_level уже есть в модели User)
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Добавляем колонку referal_level если её нет (миграция для существующих БД)
+    async with engine.begin() as conn:
+        await conn.execute(text("""
+            ALTER TABLE "user" ADD COLUMN IF NOT EXISTS referal_level INTEGER DEFAULT 0
+        """))
         
 # asyncio.run(init_models())

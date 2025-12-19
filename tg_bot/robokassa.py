@@ -4,7 +4,18 @@ import hashlib, json, base64, aiohttp
 
 env = Env()
 env.read_env(".env")
-password = env.str("ROBOKASSA_PASSWORD")
+
+# Определяем режим работы
+TEST_MODE = env.str("TEST_MODE", "FALSE").upper() == "TRUE"
+
+# Выбираем пароли в зависимости от режима
+if TEST_MODE:
+    password = env.str("ROBOKASSA_TEST_PASSWORD")
+    password2 = env.str("ROBOKASSA_TEST_PASSWORD2")
+else:
+    password = env.str("ROBOKASSA_PASSWORD")
+    password2 = env.str("ROBOKASSA_PASSWORD2")
+
 login = env.str("ROBOKASSA_LOGIN")
 
 
@@ -65,6 +76,6 @@ def generate_payment_link(
         'Description': "Покупка пептидов",
         'SignatureValue': signature,
         'Receipt': json_decoded_second,
-        'IsTest': 0
+        'IsTest': 1 if TEST_MODE else 0
     }
     return f"{'https://auth.robokassa.ru/Merchant/Index.aspx'}?{parse.urlencode(data)}"

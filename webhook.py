@@ -3,7 +3,7 @@ from aiogram import Bot
 from environs import Env
 
 from tg_bot.DBSM import pay_data, is_closed, close_payment, bucket_items, process_referal_up, clear_bucket
-from tg_bot.robokassa import calculate_signature
+from tg_bot.robokassa import calculate_signature, password2
 from tg_bot.keyboards import back_kb, contact_kb
 
 import urllib, urllib.parse
@@ -26,7 +26,7 @@ async def result():
         paynum = int(clean_data_dict["InvId"])
 
 
-        if recieved_signature != calculate_signature(clean_data_dict['OutSum'], clean_data_dict["InvId"], env.str("ROBOKASSA_PASSWORD2")).upper():
+        if recieved_signature != calculate_signature(clean_data_dict['OutSum'], clean_data_dict["InvId"], password2).upper():
             return redirect("https://t.me/bioactive_bot")
 
         if await is_closed(paynum):
