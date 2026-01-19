@@ -22,6 +22,8 @@ def main_kb(has_referal_access: bool = False):
 
 def about_kb():
     kb = InlineKeyboardMarkup()
+    kb.add(InlineKeyboardButton(text = "🏢 О компании", callback_data= "about_company"))
+    kb.add(InlineKeyboardButton(text = "💊 Продукт", callback_data= "about_product"))
     kb.add(InlineKeyboardButton(text = "❓ Что такое пептиды?", callback_data= "about_what"))
     kb.add(InlineKeyboardButton(text = "🤔 Почему наши пептиды?", callback_data= "about_why"))
     kb.add(InlineKeyboardButton(text = "📄 Документы", callback_data= "about_docs"))
@@ -94,6 +96,8 @@ def after_clear_kb():
 
 def watch_docs_kb():
     kb = InlineKeyboardMarkup()
-    kb.add(InlineKeyboardButton(text = "👀 Просмотреть документы", callback_data= "about_watch"))
+    kb.add(InlineKeyboardButton(text = "📋 Декларация соответствия", callback_data= "docs_declaration"))
+    kb.add(InlineKeyboardButton(text = "✅ Сертификат \"Халяль\"", callback_data= "docs_halal"))
+    kb.add(InlineKeyboardButton(text = "🌿 Сертификат \"Био Продукт\"", callback_data= "docs_bio"))
     kb.add(InlineKeyboardButton(text = "🔙 Назад", callback_data= "about_back"))
     return kb

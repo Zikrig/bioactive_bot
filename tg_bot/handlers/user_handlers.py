@@ -8,6 +8,8 @@ from tg_bot.DBSM import add_user, is_invited, get_referal_level, get_referals_co
 from tg_bot.robokassa import generate_payment_link
 
 import json
+import asyncio
+import os
 
 def decline_users(n):
     last_digit = n % 10
@@ -29,6 +31,7 @@ def register_handlers(dp: Dispatcher):
     dp.register_message_handler(cmd_start, commands= ['start'], state = "*")
     dp.register_callback_query_handler(start_actions, text_startswith = "start_")
     dp.register_callback_query_handler(about_actions, text_startswith = "about_")
+    dp.register_callback_query_handler(docs_actions, text_startswith = "docs_")
     dp.register_callback_query_handler(payoff_application, text = "payoff")
     dp.register_callback_query_handler(process_slide, text_startswith = "slide_")
     dp.register_callback_query_handler(process_add, text_startswith = "addtobucket_")
@@ -142,7 +145,7 @@ async def start_actions(call: types.CallbackQuery, state: FSMContext):
             await process_catalog(call.message, 1)
 
         case "price":
-            await call.message.answer("Стоимость пептидов <b>BIO ACTIVE</b>:\n<b>1</b> флакон - <b>4700₽</b>\n<b>3</b> флакона - <b>13500₽</b>\n<b>6</b> флаконов - <b>24000₽ + один в подарок</b>\n\n<i>Комплексы могут формировать из любых пептидов</i>", reply_markup= close_kb())
+            await call.message.answer("Стоимость пептидов <b>BIO ACTIVE</b>:\n<b>1</b> флакон - <b>6900₽</b>\n<b>3</b> флакона - <b>19500₽</b>\n<b>6</b> флаконов - <b>36000₽ + один в подарок</b>\n\n<i>Комплексы могут формироваться из любых пептидов на ваш выбор</i>", reply_markup= close_kb())
 
         case "bucket":
             text, price, is_clear = await bucket_items(call.from_user.id)
@@ -170,6 +173,12 @@ async def about_actions(call: types.CallbackQuery, state: FSMContext):
         case "what":
             await call.message.edit_text("В каждом флаконе BIO ACTIVE — не просто жидкость, а концентрат современной науки и природы.\n\n<b>В основе наших продуктов:</b>\n• Особые пептиды — короткие цепочки аминокислот, которые выступают в организме “сигналами” для клеток: запускают обновление, восстановление и защиту.\n• Флуревиты — стерильные водные растворы с низкими концентрациями белково-пептидных соединений. Их получают из тканей животных, растений или грибов — это источник жизненной силы для клеток.\n• Нет аллергенов, гормонов, искусственных добавок и тяжёлых консервантов.\n\n<b>Как это работает?</b>\nПептиды и флуревиты действуют мягко и адресно, “разговаривая” с определёнными тканями (например, кожей, суставами, эндометрием). Они активируют природные механизмы восстановления — организм сам начинает обновлять клетки, усиливать защиту, замедлять процессы старения.\n\n<b>Почему это безопасно?</b>\n— Не вызывает побочных эффектов\n— Не даёт нагрузку на печень и почки\n— Можно сочетать с любыми привычными средствами\n— Даже при ошибочном диагнозе не навредит — пептиды работают только там, где это действительно нужно\n\n<b>BIO ACTIVE — это натуральный, научно продуманный состав, который помогает вашему организму вернуть энергию, молодость и внутренний баланс.</b>", reply_markup= toabout_kb())
 
+        case "company":
+            await call.message.edit_text("<b>🏢 О компании BIO ACTIVE</b>\n\nBIO ACTIVE стремительно развивается на рынке более двух лет и уже успела зарекомендовать себя как уникальный производитель товаров для репродуктивного здоровья и не только. Мы специализируемся на создании продуктов на основе инновационных полипептидов, не имеющих аналогов.", reply_markup= toabout_kb())
+        
+        case "product":
+            await call.message.edit_text("<b>💊 Пептиды BIO ACTIVE</b>\n\nПептиды — это краткие цепочки аминокислот, играющие важную роль в регуляции процессов в организме. В последние годы они приобрели популярность благодаря своим свойствам, которые способствуют восстановлению и поддержанию здоровья на клеточном уровне.\n\n<b>Уникальность пептидных соединений</b>\n\nBIO ACTIVE предлагает высококачественные пептиды, которые активируют процессы самоисцеления в организме. Наши продукты основаны на передовых технологиях извлечения белковых соединений и обладают высокой биодоступностью, что делает их эффективными в борьбе с различными заболеваниями.\n\n<b>Механизм действия</b>\n\nПептиды представляют собой строительные элементы, которые восстанавливают клетки и ткани, улучшая их функции. Они действуют как регуляторы различных биохимических процессов, поддерживая здоровье органов и тканей и обеспечивая передачу сигналов, необходимых для правильной работы системы.\n\nГлавное отличие пептидов от традиционных лекарственных препаратов заключается в том, что они не просто устраняют симптомы, а работают над восстановлением естественного механизма функционирования организма. Это приводит к долговременному оздоровлению и омоложению на клеточном уровне.\n\n<b>Преимущества использования пептидов</b>\n\n1. <b>Безопасность:</b> Пептиды не вызывают побочных эффектов и могут использоваться даже при ошибочном диагнозе.\n2. <b>Профилактика:</b> Идеальны для использования в качестве профилактического средства, что делает их отличным выбором для поддержания здоровья.\n3. <b>Комбинирование:</b> Пептиды можно принимать совместно с другими биопрепаратами и лекарственными средствами, что усиливает их эффект.\n\nBIO ACTIVE предлагает инновационные решения в области здоровья через использование пептидов. Мы стремимся помочь каждому клиенту достигнуть гармонии между физическим и эмоциональным состоянием, используя научно обоснованные и безопасные подходы к восстановлению и поддержанию здоровья. Присоединяйтесь к нам на пути к восстановлению здоровья на глубоком уровне!", reply_markup= toabout_kb())
+
         case "why":
             await call.message.edit_text("<b>В каждом флаконе BIO ACTIVE — то, что выгодно отличает нас от других:</b>\n\n<b>• Природный состав и чистота:</b>\nВ основе BIO ACTIVE — особые пептидные комплексы и флуревиты из тщательно отобранных природных источников. Мы не используем гормоны, аллергенные компоненты или тяжёлые консерванты. Только то, что действительно работает на обновление организма.\n\n<b>• Точечное и деликатное действие:</b>\nНаши пептиды запускают процессы восстановления именно в тех тканях и системах, которым требуется поддержка: кожа, суставы, женское и мужское здоровье, иммунитет, нервная система. BIO ACTIVE не вмешивается в лишние процессы, а мягко стимулирует естественные механизмы обновления там, где это важно для вашего здоровья и самочувствия.\n\n<b>• Максимальная безопасность:</b>\nВ отличие от многих других добавок, BIO ACTIVE не перегружает организм, не вызывает побочных эффектов, подходит даже для самых чувствительных и не способен навредить даже при длительном применении. Продукты можно безопасно сочетать с привычными средствами.\n\n<b>• Современный научный подход:</b>\nBIO ACTIVE создан на основе передовых исследований клеточного обновления. Мы не просто «добавляем» пептиды — мы помогаем вашему организму заново включить собственные ресурсы для восстановления, омоложения и защиты.\n\n<b>• Открытость и доверие:</b>\nМы всегда подробно рассказываем, что находится внутри каждого флакона и как это действует. BIO ACTIVE — это не случайная смесь, а продуманная формула с чётко доказанным механизмом.\n\n<b>BIO ACTIVE — это пептиды, которые работают для вас: мягко, точно и эффективно. Именно поэтому наши продукты выбирают снова и снова.</b>", reply_markup= toabout_kb())
 
@@ -178,15 +187,49 @@ async def about_actions(call: types.CallbackQuery, state: FSMContext):
             await call.message.answer_video(video = InputFile("историяуспеха.mov", filename = "История успеха.mov"), height=1080, width=608, reply_markup= toabout_kb())
         
         case "docs":
-            await call.message.edit_text("✅ <b>Законность. Качество. Безопасность.</b>\n\nПродукция <b>BIO ACTIVE</b> официально зарегистрирована и соответствует всем требованиям технических регламентов Таможенного союза (ЕАЭС).\nНа каждую позицию оформлены декларации о соответствии, подтверждающие:\n\nБезопасность состава – в соответствии с ТР ТС 021/2011 (о безопасности пищевой продукции),\n\nКачественную маркировку – по стандартам ТР ТС 022/2011,\n\nДопустимость ингредиентов – согласно ТР ТС 029/2012 (пищевые добавки, ароматизаторы, технологические средства).\n\nСертификация проведена на основании лабораторных испытаний в аккредитованном центре ФБУ «ЦСМ» (г. Орехово-Зуево).\nРегистрационный номер: ЕАЭС N RU Д-RU.ПА01.В.03975/21\nСрок действия: до 14 июля 2026 года\n\n<b>🧾 Это означает, что</b>:\n\nВся продукция <b>BIO ACTIVE</b> может легально распространяться на территории России и стран ЕАЭС,\n\nПартнёры уверены в юридической чистоте и прозрачности поставок,\n\nКонечный покупатель получает гарантированно безопасный и исследованный продукт.\n\n📌 Контрактное производство ООО «АКЛОН.ОНЛАЙН», Москва\n📌 Серийный выпуск, документальное сопровождение на каждый продукт", reply_markup= watch_docs_kb())
-        
+            await call.message.edit_text(
+                """✅ <b>Законность. Качество. Безопасность.</b>
+
+Продукция <b>BIO ACTIVE</b> официально зарегистрирована и соответствует всем требованиям технических регламентов Таможенного союза (ЕАЭС).
+На каждую позицию оформлены декларации о соответствии, подтверждающие:
+
+Безопасность состава – в соответствии с ТР ТС 021/2011 (о безопасности пищевой продукции),
+
+Качественную маркировку – по стандартам ТР ТС 022/2011,
+
+Допустимость ингредиентов – согласно ТР ТС 029/2012 (пищевые добавки, ароматизаторы, технологические средства).
+
+Продукция BIO ACTIVE прошла все необходимые испытания и получила сертификаты в соответствии со всеми требованиями, гарантируя партнёрам прозрачность поставок и уверенность в высоком стандарте продукции.""",
+                reply_markup=watch_docs_kb()
+            )
+
         case "watch":
-            await call.message.answer_document(InputFile("tg_bot/doc1.pdf", "Сертификат соответствия 1.pdf"), reply_markup= close_kb())
-            await call.message.answer_document(InputFile("tg_bot/doc2.pdf", "Сертификат соответствия 2.pdf"), reply_markup= close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/Декларация соответствия.pdf", "Декларация соответствия.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к ДЕКЛАРАЦИИ.pdf", "ПИ к ДЕКЛАРАЦИИ.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия “БИО ПРОДУКТ”.pdf", "ПИ к сертификату соответствия “БИО ПРОДУКТ”.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия “ХАЛЯЛЬ”.pdf", "ПИ к сертификату соответствия “ХАЛЯЛЬ”.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “БИО ПРОДУКТ” .pdf", "СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “БИО ПРОДУКТ” .pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “ХАЛЯЛЬ”.pdf", "СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “ХАЛЯЛЬ”.pdf"), reply_markup=close_kb())
 
         case _:
             await call.message.bot.send_chat_action(chat_id= call.message.chat.id, action= "upload_video")
             await call.message.answer_video(video = InputFile("вопросответ.mp4", filename = "Вопрос-ответ.mp4"), height=600, width=315, reply_markup= toabout_kb())
+
+
+async def docs_actions(call: types.CallbackQuery, state: FSMContext):
+    action = call.data.split("_")[1]
+    match action:
+        case "declaration":
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/Декларация соответствия.pdf", "Декларация соответствия.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к ДЕКЛАРАЦИИ.pdf", "Протокол контрольных испытаний к декларации.pdf"), reply_markup=close_kb())
+        
+        case "halal":
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ \"ВЫСШЕЕ КАЧЕСТВО\" \"ХАЛЯЛЬ\".pdf", "Сертификат ХАЛЯЛЬ.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия \"ХАЛЯЛЬ\".pdf", "Протокол контрольных испытаний ХАЛЯЛЬ.pdf"), reply_markup=close_kb())
+        
+        case "bio":
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ \"ВЫСШЕЕ КАЧЕСТВО\" \"БИО ПРОДУКТ\" .pdf", "Сертификат БИО ПРОДУКТ.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия \"БИО ПРОДУКТ\".pdf", "Протокол контрольных испытаний БИО ПРОДУКТ.pdf"), reply_markup=close_kb())
 
 
 async def payoff_application(call: types.CallbackQuery, state: FSMContext):
@@ -205,12 +248,26 @@ async def process_catalog(message: types.Message, position: int):
     with open('tg_bot/description.json', 'r', encoding='utf-8') as file:
         text = json.load(file)[position]
 
-    if message.caption:
-        photo = InputFile(f"tg_bot/photos/{position}.png")
-        await message.edit_media(media= InputMediaPhoto(media= photo, caption= text), reply_markup= catalog_kb(position, position == "1", position == "6"))
+    # Telegram ограничивает caption до 1024 символов, поэтому отправляем текст отдельным сообщением
+    max_caption_length = 1024
+    if len(text) > max_caption_length:
+        # Отправляем фото без caption
+        if message.caption:
+            photo = InputFile(f"tg_bot/photos/{position}.png")
+            await message.edit_media(media= InputMediaPhoto(media= photo), reply_markup= None)
+        else:
+            await message.delete()
+            await message.answer_photo(photo = InputFile("tg_bot/photos/" + position + ".png"), reply_markup= None)
+        # Отправляем текст отдельным сообщением с клавиатурой
+        await message.answer(text, reply_markup= catalog_kb(position, position == "1", position == "6"))
     else:
-        await message.delete()
-        await message.answer_photo(photo = InputFile("tg_bot/photos/" + position + ".png"), caption= text, reply_markup= catalog_kb(position, position == "1", position == "6"))
+        # Если текст короткий, отправляем с caption как раньше
+        if message.caption:
+            photo = InputFile(f"tg_bot/photos/{position}.png")
+            await message.edit_media(media= InputMediaPhoto(media= photo, caption= text), reply_markup= catalog_kb(position, position == "1", position == "6"))
+        else:
+            await message.delete()
+            await message.answer_photo(photo = InputFile("tg_bot/photos/" + position + ".png"), caption= text, reply_markup= catalog_kb(position, position == "1", position == "6"))
 
 
 
@@ -245,15 +302,15 @@ async def start_pay(call: types.CallbackQuery, state: FSMContext):
 
 Платёж совершается в пользу:
 
-ИП СИМАШКИНА ОЛЬГА ЮРЬЕВНА
-ИНН 342803346807
-ОГРНИП 324774600089898
-Юр. адрес: г. Москва, улица Земляной Вал, д. 44, оф.26
-ТЕЛЕФОН 89654477111
-Р/СЧ 40802810502990009116
-БАНК АО "АЛЬФА-БАНК"
+
+<b>ООО "БИОАКТИВ.ПРО"
+ИНН 9724222999 КПП 772401001
+ОГРН 1257700282982
+Юр. адрес: 115487, город Москва, ул. Академика Миллионщикова, д. 13 к. 1, помещ. 12е/п 
+Р/СЧ 40702810802360006837
+БАНК АО “АЛЬФА-БАНК”
 КОР.СЧ 30101810200000000593
-ПОЧТА titulceo@gmail.com"""
+Контактный e-mail: info@bioactive.pro</b>"""
         
         await call.message.answer(payment_text, reply_markup=pay_kb(payment_link))
 
