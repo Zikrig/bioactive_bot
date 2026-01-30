@@ -263,24 +263,25 @@ async def process_catalog(message: types.Message, position: int):
             await message.delete()
             await message.answer_photo(photo = InputFile("tg_bot/photos/" + position + ".png"), reply_markup= None)
         # Отправляем текст отдельным сообщением с клавиатурой
-        await message.answer(text, reply_markup= catalog_kb(position, position == "1", position == "6"))
+        await message.answer(text, reply_markup= catalog_kb(position, position == "1", position == "7"))
     else:
         # Если текст короткий, отправляем с caption как раньше
         if message.caption:
             photo = InputFile(f"tg_bot/photos/{position}.png")
-            await message.edit_media(media= InputMediaPhoto(media= photo, caption= text), reply_markup= catalog_kb(position, position == "1", position == "6"))
+            await message.edit_media(media= InputMediaPhoto(media= photo, caption= text), reply_markup= catalog_kb(position, position == "1", position == "7"))
         else:
             await message.delete()
-            await message.answer_photo(photo = InputFile("tg_bot/photos/" + position + ".png"), caption= text, reply_markup= catalog_kb(position, position == "1", position == "6"))
+            await message.answer_photo(photo = InputFile("tg_bot/photos/" + position + ".png"), caption= text, reply_markup= catalog_kb(position, position == "1", position == "7"))
 
 
 
 async def process_slide(call: types.CallbackQuery, state: FSMContext):
     await call.answer()
     _, pos, is_forward = call.data.split("_")
-    pos = int(pos) 
+    pos = int(pos)
     is_forward = bool(int(is_forward))
-    pos = pos + 1 if is_forward else pos -1
+    pos = pos + 1 if is_forward else pos - 1
+    pos = max(1, min(7, pos))  # каталог: позиции 1–7
     await process_catalog(call.message, pos)
 
 
