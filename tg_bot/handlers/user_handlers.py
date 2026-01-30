@@ -206,10 +206,10 @@ async def about_actions(call: types.CallbackQuery, state: FSMContext):
         case "watch":
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/Декларация соответствия.pdf", "Декларация соответствия.pdf"), reply_markup=close_kb())
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к ДЕКЛАРАЦИИ.pdf", "ПИ к ДЕКЛАРАЦИИ.pdf"), reply_markup=close_kb())
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия “БИО ПРОДУКТ”.pdf", "ПИ к сертификату соответствия “БИО ПРОДУКТ”.pdf"), reply_markup=close_kb())
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия “ХАЛЯЛЬ”.pdf", "ПИ к сертификату соответствия “ХАЛЯЛЬ”.pdf"), reply_markup=close_kb())
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “БИО ПРОДУКТ” .pdf", "СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “БИО ПРОДУКТ” .pdf"), reply_markup=close_kb())
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “ХАЛЯЛЬ”.pdf", "СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “ХАЛЯЛЬ”.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия БИО ПРОДУКТ.pdf", "ПИ к сертификату соответствия “БИО ПРОДУКТ”.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия ХАЛЯЛЬ.pdf", "ПИ к сертификату соответствия “ХАЛЯЛЬ”.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО БИО ПРОДУКТ” .pdf", "СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “БИО ПРОДУКТ” .pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО ХАЛЯЛЬ.pdf", "СЕРТИФИКАТ СООТВЕТСТВИЯ “ВЫСШЕЕ КАЧЕСТВО” “ХАЛЯЛЬ”.pdf"), reply_markup=close_kb())
 
         case _:
             await call.message.bot.send_chat_action(chat_id= call.message.chat.id, action= "upload_video")
