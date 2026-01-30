@@ -224,12 +224,12 @@ async def docs_actions(call: types.CallbackQuery, state: FSMContext):
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к ДЕКЛАРАЦИИ.pdf", "Протокол контрольных испытаний к декларации.pdf"), reply_markup=close_kb())
         
         case "halal":
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ \"ВЫСШЕЕ КАЧЕСТВО\" \"ХАЛЯЛЬ\".pdf", "Сертификат ХАЛЯЛЬ.pdf"))
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия \"ХАЛЯЛЬ\".pdf", "Протокол контрольных испытаний ХАЛЯЛЬ.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО ХАЛЯЛЬ.pdf", "Сертификат ХАЛЯЛЬ.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия ХАЛЯЛЬ.pdf", "Протокол контрольных испытаний ХАЛЯЛЬ.pdf"), reply_markup=close_kb())
         
         case "bio":
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ \"ВЫСШЕЕ КАЧЕСТВО\" \"БИО ПРОДУКТ\" .pdf", "Сертификат БИО ПРОДУКТ.pdf"))
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия \"БИО ПРОДУКТ\".pdf", "Протокол контрольных испытаний БИО ПРОДУКТ.pdf"), reply_markup=close_kb())
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО БИО ПРОДУКТ .pdf", "Сертификат БИО ПРОДУКТ.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия БИО ПРОДУКТ.pdf", "Протокол контрольных испытаний БИО ПРОДУКТ.pdf"), reply_markup=close_kb())
 
 
 async def payoff_application(call: types.CallbackQuery, state: FSMContext):
