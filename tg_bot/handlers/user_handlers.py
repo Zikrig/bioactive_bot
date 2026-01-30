@@ -228,7 +228,7 @@ async def docs_actions(call: types.CallbackQuery, state: FSMContext):
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия ХАЛЯЛЬ.pdf", "Протокол контрольных испытаний ХАЛЯЛЬ.pdf"), reply_markup=close_kb())
         
         case "bio":
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО БИО ПРОДУКТ .pdf", "Сертификат БИО ПРОДУКТ.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО БИО ПРОДУКТ.pdf", "Сертификат БИО ПРОДУКТ.pdf"))
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия БИО ПРОДУКТ.pdf", "Протокол контрольных испытаний БИО ПРОДУКТ.pdf"), reply_markup=close_kb())
 
 
