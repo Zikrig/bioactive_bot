@@ -97,7 +97,7 @@ def after_clear_kb():
 def watch_docs_kb():
     kb = InlineKeyboardMarkup()
     kb.add(InlineKeyboardButton(text = "📋 Декларация соответствия", callback_data= "docs_declaration"))
-    kb.add(InlineKeyboardButton(text = "✅ Сертификат \"Халяль\"", callback_data= "docs_halal"))
-    kb.add(InlineKeyboardButton(text = "🌿 Сертификат \"Био Продукт\"", callback_data= "docs_bio"))
+    kb.add(InlineKeyboardButton(text = "✅ Сертификат «Высшее качество» \"Халяль\"", callback_data= "docs_halal"))
+    kb.add(InlineKeyboardButton(text = "🌿 Сертификат «Высшее качество» \"БИО Продукт\"", callback_data= "docs_bio"))
     kb.add(InlineKeyboardButton(text = "🔙 Назад", callback_data= "about_back"))
     return kb
