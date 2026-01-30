@@ -1,4 +1,5 @@
 .env
+.env.fight
 venv
 *.sqlite3
 *.db
