@@ -70,6 +70,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     
 
 async def start_actions(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     action = call.data.split("_")[1]
     
     # Проверяем, является ли пользователь рефералом (первого или второго уровня)
@@ -161,6 +162,7 @@ async def start_actions(call: types.CallbackQuery, state: FSMContext):
 
 
 async def about_actions(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     action = call.data.split("_")[1]
     match action:
         case "back":
@@ -217,22 +219,24 @@ async def about_actions(call: types.CallbackQuery, state: FSMContext):
 
 
 async def docs_actions(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     action = call.data.split("_")[1]
     match action:
         case "declaration":
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/Декларация соответствия.pdf", "Декларация соответствия.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/Декларация соответствия.pdf", "Декларация соответствия.pdf"), reply_markup=close_kb())
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к ДЕКЛАРАЦИИ.pdf", "Протокол контрольных испытаний к декларации.pdf"), reply_markup=close_kb())
         
         case "halal":
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО ХАЛЯЛЬ.pdf", "Сертификат ХАЛЯЛЬ.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО ХАЛЯЛЬ.pdf", "Сертификат ХАЛЯЛЬ.pdf"), reply_markup=close_kb())
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия ХАЛЯЛЬ.pdf", "Протокол контрольных испытаний ХАЛЯЛЬ.pdf"), reply_markup=close_kb())
         
         case "bio":
-            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО БИО ПРОДУКТ.pdf", "Сертификат БИО ПРОДУКТ.pdf"))
+            await call.message.answer_document(InputFile("tg_bot/data/sertificates/СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫСШЕЕ КАЧЕСТВО БИО ПРОДУКТ.pdf", "Сертификат БИО ПРОДУКТ.pdf"), reply_markup=close_kb())
             await call.message.answer_document(InputFile("tg_bot/data/sertificates/ПИ к сертификату соответствия БИО ПРОДУКТ.pdf", "Протокол контрольных испытаний БИО ПРОДУКТ.pdf"), reply_markup=close_kb())
 
 
 async def payoff_application(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     balance = await get_referal_balance(call.from_user.id)
     if balance:
         await call.message.answer("✅ Ваша заявка на вывод успешно отправлена! Администраторы свяжутся с вами в ближайшее время для уточнения деталей", reply_markup= back_kb())
@@ -272,6 +276,7 @@ async def process_catalog(message: types.Message, position: int):
 
 
 async def process_slide(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     _, pos, is_forward = call.data.split("_")
     pos = int(pos) 
     is_forward = bool(int(is_forward))
@@ -282,14 +287,16 @@ async def process_slide(call: types.CallbackQuery, state: FSMContext):
 async def process_add(call: types.CallbackQuery, state: FSMContext):
     pos = call.data.split("_")[1]
     await add_to_bucket(call.from_user.id, pos)
-    await call.answer("✅ Позиция успешно добавлена в корзину!", show_alert= True)
+    await call.answer("✅ Позиция успешно добавлена в корзину!", show_alert=True)
 
 
 async def proc_clear_bucket(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     await clear_bucket(call.from_user.id)
     await call.message.edit_text("🗑️ Ваша корзина успешно очищена!", reply_markup= after_clear_kb())
 
 async def start_pay(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     price = int(call.data.split("_")[1])
     if price:
         # TODO: добавить сбор адреса доставки через FSM
@@ -316,6 +323,7 @@ async def start_pay(call: types.CallbackQuery, state: FSMContext):
 
 
 async def payed(call: types.CallbackQuery, state: FSMContext):
+    await call.answer()
     price = int(call.data.split("_")[1])
     bucket_items_list, _, _ = await bucket_items(call.from_user.id)
     items = bucket_items_list.split("Сумма корзины")[0].split("Состав Вашей корзины 👇")[1]
