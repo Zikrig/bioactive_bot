@@ -278,7 +278,7 @@ async def process_catalog(message: types.Message, position: int):
 async def process_slide(call: types.CallbackQuery, state: FSMContext):
     await call.answer()
     _, pos, is_forward = call.data.split("_")
-    pos = int(pos)
+    pos = int(pos) 
     is_forward = bool(int(is_forward))
     pos = pos + 1 if is_forward else pos - 1
     pos = max(1, min(7, pos))  # каталог: позиции 1–7

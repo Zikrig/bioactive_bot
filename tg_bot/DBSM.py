@@ -33,12 +33,13 @@ MAIN_REFERAL_ID = ADMIN_IDS[0] if ADMIN_IDS else 0
 
 
 positions = {
-    "1": "BIOACTIVE яичников",
-    "2": "BIOACTIVE эндометрия",
-    "3": "BIOACTIVE для улучшения неврологического здоровья",
-    "4": "BIOACTIVE для улучшения имунной системы",
-    "5": "BIOACTIVE соединительной ткани", 
-    "6": "BIOACTIVE for men"
+    "1": "BioActive соединительной ткани",
+    "2": "BioActive яичников",
+    "3": "BioActive эндометрия",
+    "4": "BioActive for men I",
+    "5": "BioActive for men II",
+    "6": "BioActive щитовидной железы",
+    "7": "BioActive для улучшения неврологического здоровья"
 }
 
 class User(Base):
@@ -244,7 +245,8 @@ async def bucket_items(user_id):
     curr = curr.scalars().first() 
     bucket = curr.bucket
     for key, value in bucket.items():
-        output += f"<u>Позиция №{key}</u>\nНазвание: <b>{positions[key]}</b>\nКоличество: <b>{value}</b>\n\n"
+        name = positions.get(key, f"Позиция №{key}")
+        output += f"<u>Позиция №{key}</u>\nНазвание: <b>{name}</b>\nКоличество: <b>{value}</b>\n\n"
 
     items_count = sum(int(value) for value in bucket.values())
     if items_count < 3:
