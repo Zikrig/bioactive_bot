@@ -249,16 +249,25 @@ async def bucket_items(user_id):
         output += f"<u>Позиция №{key}</u>\nНазвание: <b>{name}</b>\nКоличество: <b>{value}</b>\n\n"
 
     items_count = sum(int(value) for value in bucket.values())
+    # 1 фл. — 6900₽, 3 фл. — 19500₽, 6 фл. — 36000₽ + 7-й в подарок
     if items_count < 3:
-        sum_bucket, price = f"Сумма корзины составляет <b>{items_count * 4700}₽</b>", items_count * 4700
-    elif 3 <= items_count < 6:
-        sum_bucket, price = f"Сумма корзины составляет <b>{13500 + 4700 * (items_count - 3)}₽</b>", 13500 + 4700 * (items_count - 3)
+        sum_bucket, price = f"Сумма корзины составляет <b>{items_count * 6900}₽</b>", items_count * 6900
+    elif items_count == 3:
+        sum_bucket, price = f"Сумма корзины составляет <b>19.500₽</b>", 19500
+    elif 4 <= items_count < 6:
+        p = 19500 + 6900 * (items_count - 3)
+        sum_bucket, price = f"Сумма корзины составляет <b>{p}₽</b>", p
     elif items_count == 6:
-        sum_bucket, price = "Сумма корзины составляет <b>24.000₽</b>\nP.S. <i>При заказе 6 флаконов 7-й идёт в подарок, так что Вы можете добавить его в корзину и получить абсолютно бесплатно!</i>", 24000
+        sum_bucket, price = "Сумма корзины составляет <b>36.000₽</b>\nP.S. <i>При заказе 6 флаконов 7-й идёт в подарок, так что Вы можете добавить его в корзину и получить абсолютно бесплатно!</i>", 36000
     elif items_count == 7:
-        sum_bucket, price = "Сумма корзины составляет <b>24.000₽</b>\nP.S. <i>При заказе 6 флаконов 7-й идёт в подарок, так что Вы получаете один флакон пептидов <b>BIO ACTIVE</b> абсолютно бесплатно!</i>", 24000
-    elif items_count > 7:
-        sum_bucket, price = f"Сумма корзины составляет <b>{24000 + 4700 * (items_count - 7)}₽</b>\nP.S. <i>При заказе 6 флаконов 7-й идёт в подарок, так что Вы получаете один флакон пептидов <b>BIO ACTIVE</b> абсолютно бесплатно!</i>", 24000 + 4700 * (items_count - 7)
+        sum_bucket, price = "Сумма корзины составляет <b>36.000₽</b>\nP.S. <i>При заказе 6 флаконов 7-й идёт в подарок, так что Вы получаете один флакон пептидов <b>BIO ACTIVE</b> абсолютно бесплатно!</i>", 36000
+    else:
+        # 8+: полные «семёрки» (6+1 в подарок) по 36000, остаток — по скидкам (1–2 по 6900, 3 по 19500 и т.д.)
+        price_for_remainder = (0, 6900, 13800, 19500, 26400, 33300, 36000)  # остаток 0..6
+        full_sevens = items_count // 7
+        remainder = items_count % 7
+        p = full_sevens * 36000 + price_for_remainder[remainder]
+        sum_bucket, price = f"Сумма корзины составляет <b>{p}₽</b>\nP.S. <i>При заказе 6 флаконов 7-й идёт в подарок, так что Вы получаете один флакон пептидов <b>BIO ACTIVE</b> абсолютно бесплатно!</i>", p
     
     output += sum_bucket
     if not bucket:
